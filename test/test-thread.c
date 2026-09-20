@@ -238,6 +238,39 @@ static void thread_check_stack(void* arg) {
     expected = (size_t)lim.rlim_cur;
   ASSERT_GE(stack_size, expected);
   ASSERT_OK(pthread_attr_destroy(&attr));
+#elif defined(_WIN32)
+  MEMORY_BASIC_INFORMATION stack_info;
+  char stack_marker;
+  char* address;
+  void* allocation_base;
+  size_t committed_size;
+  size_t expected;
+  size_t reserved_size;
+
+  expected = arg == NULL ? 0 : ((uv_thread_options_t*)arg)->stack_size;
+  if (expected != 8 * 1024 * 1024)
+    return;
+
+  ASSERT_EQ(sizeof(stack_info),
+            VirtualQuery(&stack_marker, &stack_info, sizeof(stack_info)));
+  allocation_base = stack_info.AllocationBase;
+  address = (char*) allocation_base;
+  committed_size = 0;
+  reserved_size = 0;
+
+  for (;;) {
+    ASSERT_EQ(sizeof(stack_info),
+              VirtualQuery(address, &stack_info, sizeof(stack_info)));
+    if (stack_info.AllocationBase != allocation_base)
+      break;
+    if (stack_info.State == MEM_COMMIT)
+      committed_size += stack_info.RegionSize;
+    reserved_size += stack_info.RegionSize;
+    address += stack_info.RegionSize;
+  }
+
+  ASSERT_GE(reserved_size, expected);
+  ASSERT_LT(committed_size, expected);
 #endif
 }
 
