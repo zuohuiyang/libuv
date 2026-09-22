@@ -111,6 +111,19 @@ TEST_IMPL(thread_name) {
   ASSERT_STR_EQ(tn, "~½¬{½");
 #endif
 
+#ifdef _WIN32
+  ASSERT_OK(uv_thread_setname(""));
+  ASSERT_OK(uv_thread_getname(&threads[0], tn, sizeof(tn)));
+  ASSERT_STR_EQ(tn, "");
+
+  ASSERT_EQ(UV_EINVAL, uv_thread_setname("\xff"));
+
+  /* Truncating a valid multi-byte name can leave an incomplete character. */
+  long_thread_name[sizeof(thread_name) - 2] = '\xc2';
+  long_thread_name[sizeof(thread_name) - 1] = '\xa2';
+  ASSERT_EQ(UV_EINVAL, uv_thread_setname(long_thread_name));
+#endif
+
   ASSERT_OK(uv_thread_create(threads + 1, thread_run, &sem));
 
   uv_sem_wait(&sem.worker);

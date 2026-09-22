@@ -296,6 +296,7 @@ int uv_thread_setname(const char* name) {
   HRESULT hr;
   WCHAR* namew;
   int err;
+  size_t len;
   char namebuf[UV_PTHREAD_MAX_NAMELEN_NP];
 
   uv_once(&uv__thread_name_once, uv__thread_name_init_once);
@@ -306,8 +307,9 @@ int uv_thread_setname(const char* name) {
   if (name == NULL)
     return UV_EINVAL;
 
-  strncpy(namebuf, name, sizeof(namebuf) - 1);
-  namebuf[sizeof(namebuf) - 1] = '\0';
+  len = strnlen(name, sizeof(namebuf) - 1);
+  memcpy(namebuf, name, len);
+  namebuf[len] = '\0';
 
   namew = NULL;
   err = uv__convert_utf8_to_utf16(namebuf, &namew);
