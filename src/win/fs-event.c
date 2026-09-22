@@ -64,24 +64,19 @@ static void uv__fs_event_queue_readdirchanges(uv_loop_t* loop,
 }
 
 /* Compute the path of `filename` relative to the watched directory `dir`.
+ * The returned path points into `filename`.
  * Returns 0 on success, -1 if `filename` is not actually prefixed by `dir`,
  * which can happen if the directory is a short path. */
-static int uv__relative_path(const WCHAR* filename,
+static int uv__relative_path(WCHAR* filename,
                              const WCHAR* dir,
                              WCHAR** relpath) {
-  size_t relpathlen;
   size_t filenamelen = wcslen(filename);
   size_t dirlen = wcslen(dir);
   if (filenamelen <= dirlen || _wcsnicmp(filename, dir, dirlen) != 0)
     return -1;
   if (dirlen > 0 && dir[dirlen - 1] == '\\')
     dirlen--;
-  relpathlen = filenamelen - dirlen - 1;
-  *relpath = uv__malloc((relpathlen + 1) * sizeof(WCHAR));
-  if (!*relpath)
-    uv_fatal_error(ERROR_OUTOFMEMORY, "uv__malloc");
-  wcsncpy(*relpath, filename + dirlen + 1, relpathlen);
-  (*relpath)[relpathlen] = L'\0';
+  *relpath = filename + dirlen + 1;
   return 0;
 }
 
@@ -530,8 +525,6 @@ void uv__process_fs_event_req(uv_loop_t* loop, uv_req_t* req,
                 if (uv__relative_path(long_filenamew,
                                       handle->dirw,
                                       &filenamew) == 0) {
-                  uv__free(long_filenamew);
-                  long_filenamew = filenamew;
                   sizew = -1;
                 } else {
                   /* The resolved long path was not prefixed by the watched
