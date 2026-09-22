@@ -1793,7 +1793,8 @@ static int uv__pipe_write_data(uv_loop_t* loop,
 
   /* Prepare the overlapped structure. */
   memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
-  if (handle->flags & (UV_HANDLE_EMULATE_IOCP | UV_HANDLE_BLOCKING_WRITES)) {
+  if (!(handle->flags & UV_HANDLE_NON_OVERLAPPED_PIPE) &&
+      (handle->flags & (UV_HANDLE_EMULATE_IOCP | UV_HANDLE_BLOCKING_WRITES))) {
     req->event_handle = CreateEvent(NULL, 0, 0, NULL);
     if (req->event_handle == NULL) {
       uv_fatal_error(GetLastError(), "CreateEvent");
