@@ -557,11 +557,13 @@ int make_program_args(char** args, int verbatim_arguments, WCHAR** dst_ptr) {
   
   dst[0] = '\0';
   if (arg_count > 0) {
-    /* Allocate temporary working buffer. */
-    temp_buffer = uv__malloc(temp_buffer_len * sizeof(WCHAR));
-    if (temp_buffer == NULL) {
-      err = UV_ENOMEM;
-      goto error;
+    if (!verbatim_arguments) {
+      /* Allocate temporary working buffer for quoting/escaping. */
+      temp_buffer = uv__malloc(temp_buffer_len * sizeof(WCHAR));
+      if (temp_buffer == NULL) {
+        err = UV_ENOMEM;
+        goto error;
+      }
     }
 
     pos = dst;
@@ -572,14 +574,14 @@ int make_program_args(char** args, int verbatim_arguments, WCHAR** dst_ptr) {
       arg_len = uv_wtf8_length_as_utf16(*arg);
       assert(arg_len > 0);
       assert(temp_buffer_len >= (size_t) arg_len);
-      uv_wtf8_to_utf16(*arg, temp_buffer, arg_len);
 
       if (verbatim_arguments) {
         /* Copy verbatim. */
-        wcscpy(pos, temp_buffer);
+        uv_wtf8_to_utf16(*arg, pos, arg_len);
         pos += arg_len - 1;
       } else {
         /* Quote/escape, if needed. */
+        uv_wtf8_to_utf16(*arg, temp_buffer, arg_len);
         pos = quote_cmd_arg(temp_buffer, pos);
       }
 

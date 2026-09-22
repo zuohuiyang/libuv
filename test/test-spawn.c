@@ -1298,6 +1298,21 @@ TEST_IMPL(argument_escaping) {
     "c:\\path\\to\\node.exe --eval \"require('c:\\\\path\\\\to\\\\test.js')\"",
     NULL
   };
+  char* verbatim_edge_cases[][4] = {
+    { NULL },
+    { "", NULL },
+    { "", "", NULL },
+    { "a", "", "b", NULL },
+    { "\xe4\xb8\xad", "\xf0\x9f\x98\x80", "\xed\xa0\x80", NULL }
+  };
+  const WCHAR* verbatim_edge_outputs[] = {
+    L"",
+    L"",
+    L" ",
+    L"a  b",
+    L"\x4e2d \xd83d\xde00 \xd800"
+  };
+  char* invalid_verbatim[] = { "cmd.exe", "\xff", NULL };
   WCHAR* verbatim_output;
   WCHAR* non_verbatim_output;
 
@@ -1349,6 +1364,16 @@ TEST_IMPL(argument_escaping) {
 
   free(verbatim_output);
   free(non_verbatim_output);
+
+  for (i = 0; i < (int) ARRAY_SIZE(verbatim_edge_cases); i++) {
+    result = make_program_args(verbatim_edge_cases[i], 1, &verbatim_output);
+    ASSERT_OK(result);
+    ASSERT_OK(wcscmp(verbatim_output, verbatim_edge_outputs[i]));
+    free(verbatim_output);
+  }
+
+  result = make_program_args(invalid_verbatim, 1, &verbatim_output);
+  ASSERT_EQ(UV_EINVAL, result);
 
   return 0;
 }
