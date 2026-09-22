@@ -667,10 +667,11 @@ int uv_interface_addresses(uv_interface_address_t** addresses_ptr,
   flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
     GAA_FLAG_SKIP_DNS_SERVER;
 
-  /* Fetch the size of the adapters reported by windows, and then get the list
-   * itself. */
-  win_address_buf_size = 0;
-  win_address_buf = NULL;
+  /* Start with the recommended size to avoid querying the adapters twice. */
+  win_address_buf_size = 15 * 1024;
+  win_address_buf = uv__malloc(win_address_buf_size);
+  if (win_address_buf == NULL)
+    win_address_buf_size = 0;
 
   for (;;) {
     ULONG r;
