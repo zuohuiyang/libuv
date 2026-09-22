@@ -1662,7 +1662,12 @@ void fs__opendir(uv_fs_t* req) {
   }
 
   _snwprintf(find_path, len + 3, fmt, pathw);
-  dir->dir_handle = FindFirstFileW(find_path, &dir->find_data);
+  dir->dir_handle = FindFirstFileExW(find_path,
+                                   FindExInfoBasic,
+                                   &dir->find_data,
+                                   FindExSearchNameMatch,
+                                   NULL,
+                                   0);
   uv__free(find_path);
   find_path = NULL;
   if (dir->dir_handle == INVALID_HANDLE_VALUE &&
